@@ -1,28 +1,28 @@
-# Detekt custom rule template
+# Detekt Import Customs
 
-This repository is a template. You can use it to generate your own repository to write and share your custom rules.
+com.example.package1
+com.example.package2
+com.example.package3
 
-## How to use it
+You can add a new restriction like following.
 
-1. Create a new repository using this one as a template. [Click here][create_template]
-2. Edit MyRule to fit your use case
-3. Share your rule! You can upload your rule to [Maven Central][maven_central] if you want. If you don't want to do all
-   the steps that Maven Central requires you can just share your rule using [jitpack][jitpack].
-4. Extra: you can remove all this README and explain what your rule does and how to configure it.
+`com.example.package1` must not import `com.example.package2` and `com.example.package3`.
 
-## Documentation
+com.example.package1
+prohibited packages
+    com.example.package2
+    com.example.package3
 
-You can find the documentation about how to write custom [rules here][custom_rule_documentation].
+## Usecase
 
-## Note
+com.example.logic
+com.example.web
+com.example.db
 
-Remember that, by default, all rules are disabled. To configure your rules edit the file in
-`src/main/resources/config/config.yml`.
+`logic` must not import `web`, `db`
 
-[create_template]: https://github.com/detekt/detekt-custom-rule-template/generate
+## Ref
 
-[maven_central]: https://search.maven.org/
-
-[custom_rule_documentation]: https://detekt.github.io/detekt/extensions.html
-
-[jitpack]: https://jitpack.io/
+https://detekt.dev/docs/introduction/extensions/
+https://github.com/detekt/detekt-custom-rule-template
+https://github.com/detekt/detekt/tree/main/detekt-sample-extensions
