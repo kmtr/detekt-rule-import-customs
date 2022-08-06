@@ -1,3 +1,3 @@
-MyRuleSet:
-  MyRule:
+ImportCustomsRuleSet:
+  ImportCustomsRule:
     active: true
