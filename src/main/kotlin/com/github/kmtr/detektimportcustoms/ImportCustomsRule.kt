@@ -3,33 +3,53 @@ package com.github.kmtr.detektimportcustoms
 import io.gitlab.arturbosch.detekt.api.*
 import org.jetbrains.kotlin.psi.KtImportList
 
-class ImportCustomsRule(config: Config) : Rule(config) {
+data class ImportCustomConfiguration(
+    val targetPackageNamePattern: String,
+    val forbiddenImportPatterns: List<String>
+)
 
-    private val configBasePackage: String by config("")
-    private val configProhibitedPackages: List<String> by config(arrayListOf())
+typealias ImportCustomConfigurations = List<ImportCustomConfiguration>
+
+class ImportCustomsRule(config: Config) : Rule(config) {
+    private val patterns: List<String> by config(arrayListOf())
 
     override val issue = Issue(
-        javaClass.simpleName,
+        javaClass.canonicalName,
         Severity.CodeSmell,
-        "This rule reports...",
+        "This rule reports the violations of prohibited imports",
         Debt.FIVE_MINS,
     )
 
     override fun visitImportList(importList: KtImportList) {
         super.visitImportList(importList)
+        val configurations: ImportCustomConfigurations = patterns.map {
+            val patterns = it.split("::")
+            val basePackage = patterns[0]
+            val forbiddenImportPatterns = patterns[1].split(",")
+            ImportCustomConfiguration(
+                targetPackageNamePattern = basePackage,
+                forbiddenImportPatterns = forbiddenImportPatterns
+            )
+        }
+
         val currentPackage = importList.containingKtFile.packageFqName
-        if (currentPackage.toString().startsWith(configBasePackage)) {
-            val bans = importList.imports.filter {
-                configProhibitedPackages.contains(it.text)
-            }
-            bans.let {
+        configurations
+            .filter {
+                currentPackage.toString().matches(it.targetPackageNamePattern.toRegex())
+            }.flatMap { conf ->
+                importList.imports.filter { ktImport ->
+                    conf.forbiddenImportPatterns.any {
+                        ktImport.importPath.toString().matches(it.toRegex())
+                    }
+                }
+            }.map { ktImportDirective ->
                 report(
                     CodeSmell(
-                        issue, Entity.atPackageOrFirstDecl(importList.containingKtFile),
-                        "%s is prohibited in this package".format(it)
+                        issue,
+                        Entity.from(importList.containingKtFile),
+                        "`%s` is prohibited in `%s`".format(ktImportDirective.importPath, currentPackage)
                     )
                 )
             }
-        }
     }
 }
