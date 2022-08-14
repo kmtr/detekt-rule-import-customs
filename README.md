@@ -1,28 +1,19 @@
-# Detekt Import Customs
+# Detekt Rule of Import Customs
 
-com.example.package1
-com.example.package2
-com.example.package3
+You can add new import restrictions, if you want to prohibit certain imports on the specific package.
+This rule gives one-way import rules.
 
-You can add a new restriction like following.
+## Sample
 
-`com.example.package1` must not import `com.example.package2` and `com.example.package3`.
+This is a sample of the configuration of this rule.
 
-com.example.package1
-prohibited packages
-    com.example.package2
-    com.example.package3
+```
+patterns:
+    - ^com\\.example\\.pattern::^com\\.example\\.package2,^com\\.example\\.lib\\.package3.*
+```
 
-## Usecase
+This configuration gives you a following restriction.
 
-com.example.logic
-com.example.web
-com.example.db
+`com.example.pattern` must not import `com.example.package2` and `com.example.lib.package3.logic`.
 
-`logic` must not import `web`, `db`
-
-## Ref
-
-https://detekt.dev/docs/introduction/extensions/
-https://github.com/detekt/detekt-custom-rule-template
-https://github.com/detekt/detekt/tree/main/detekt-sample-extensions
+TODO: improve configuration expression
