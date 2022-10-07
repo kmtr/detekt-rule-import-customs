@@ -14,7 +14,7 @@ class ImportCustomsRule(config: Config) : Rule(config) {
     private val patterns: List<String> by config(arrayListOf())
 
     override val issue = Issue(
-        javaClass.canonicalName,
+        "DetectProhibitedImports",
         Severity.CodeSmell,
         "This rule reports the violations of prohibited imports",
         Debt.FIVE_MINS,
