@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.9.23"
+    kotlin("jvm") version "2.0.21"
     `maven-publish`
 }
 
@@ -13,11 +13,11 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.gitlab.arturbosch.detekt:detekt-api:1.23.6")
+    compileOnly("io.gitlab.arturbosch.detekt:detekt-api:1.23.7")
 
-    testImplementation("io.gitlab.arturbosch.detekt:detekt-test:1.23.6")
+    testImplementation("io.gitlab.arturbosch.detekt:detekt-test:1.23.7")
     testImplementation("io.kotest:kotest-assertions-core:5.9.1")
-    testImplementation("org.junit.jupiter:junit-jupiter:5.10.3")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.11.3")
 }
 
 tasks.withType<KotlinCompile>() {
