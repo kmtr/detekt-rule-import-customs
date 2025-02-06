@@ -22,13 +22,10 @@ internal class ImportCustomsRuleTest(private val env: KotlinCoreEnvironment) {
         }
         """
 
-        val config = TestConfig(
-            mapOf(
-                "patterns" to arrayListOf<String>(
-                    "^com.example.app::^java\\.text.*"
-                )
-            )
-        )
+        val config = TestConfig(Pair("patterns", arrayListOf(
+            "^com.example.app::^java\\.text.*"
+        )))
+
         val findings = ImportCustomsRule(config).compileAndLintWithContext(env, code)
         findings shouldHaveSize 1
     }
