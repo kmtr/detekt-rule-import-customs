@@ -1,7 +1,5 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
-    kotlin("jvm") version "2.1.20"
+    kotlin("jvm") version "2.1.21"
     `maven-publish`
 }
 
@@ -18,10 +16,11 @@ dependencies {
     testImplementation("io.gitlab.arturbosch.detekt:detekt-test:1.23.8")
     testImplementation("io.kotest:kotest-assertions-core:5.9.1")
     testImplementation("org.junit.jupiter:junit-jupiter:5.12.1")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.10.1")
 }
 
 tasks.withType<Test>().configureEach {
-    useJUnitPlatform()
+    useJUnitPlatform() // useJUnitPlatformをこのように呼び出す
     systemProperty("junit.jupiter.testinstance.lifecycle.default", "per_class")
     systemProperty("compile-snippet-tests", project.hasProperty("compile-test-snippets"))
 }
