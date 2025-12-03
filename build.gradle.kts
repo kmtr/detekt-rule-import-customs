@@ -16,7 +16,7 @@ dependencies {
     testImplementation("io.gitlab.arturbosch.detekt:detekt-test:1.23.8")
     testImplementation("io.kotest:kotest-assertions-core:6.0.7")
     testImplementation("org.junit.jupiter:junit-jupiter:6.0.0")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher:6.0.0")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:6.0.1")
 }
 
 tasks.withType<Test>().configureEach {
