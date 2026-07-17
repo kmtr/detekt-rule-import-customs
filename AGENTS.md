@@ -8,17 +8,19 @@ This is a single-module Kotlin/JVM project that provides a custom Detekt rule.
 - `src/main/resources/META-INF/services/` registers the provider through Java's service-loader mechanism.
 - `src/main/resources/config/config.yml` defines the default Detekt configuration.
 - `src/test/kotlin/com/github/kmtr/detektimportcustoms/` contains rule tests.
-- `build.gradle.kts`, `settings.gradle.kts`, and `gradle.properties` configure the build; use the checked-in Gradle wrapper rather than a system Gradle installation.
+- `build.gradle.kts`, `settings.gradle.kts`, and `gradle.properties` configure the build; `mise.toml` pins the JDK and Gradle versions and defines common tasks.
 
 Keep production and test packages aligned. When adding a rule or provider, also update the service registration or default configuration when applicable.
 
 ## Build, Test, and Development Commands
 
-- `./gradlew build` compiles the plugin, runs tests, and creates the JAR under `build/libs/`.
-- `./gradlew test` runs the JUnit 5 test suite.
-- `./gradlew test -Pcompile-test-snippets` repeats CI's snippet-compilation mode.
-- `./gradlew publishToMavenLocal` verifies Maven publication and installs the snapshot locally for integration testing.
-- `./gradlew clean` removes generated build output.
+- `mise install` installs the repository's Temurin JDK and Gradle toolchain.
+- `mise run build` compiles the plugin, runs tests, and creates the JAR under `build/libs/`.
+- `mise run test` runs the JUnit 5 test suite.
+- `mise run test-snippets` repeats CI's snippet-compilation mode.
+- `mise run publish-local` verifies Maven publication and installs the snapshot locally.
+
+Run `mise exec -- gradle clean` for Gradle tasks without a predefined mise task. Keep the Gradle version in `mise.toml` aligned with `gradle/wrapper/gradle-wrapper.properties`, because CI uses the wrapper.
 
 ## Coding Style & Naming Conventions
 

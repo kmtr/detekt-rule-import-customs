@@ -1,6 +1,13 @@
 package com.github.kmtr.detektimportcustoms
 
-import io.gitlab.arturbosch.detekt.api.*
+import io.gitlab.arturbosch.detekt.api.CodeSmell
+import io.gitlab.arturbosch.detekt.api.Config
+import io.gitlab.arturbosch.detekt.api.Debt
+import io.gitlab.arturbosch.detekt.api.Entity
+import io.gitlab.arturbosch.detekt.api.Issue
+import io.gitlab.arturbosch.detekt.api.Rule
+import io.gitlab.arturbosch.detekt.api.Severity
+import io.gitlab.arturbosch.detekt.api.config
 import org.jetbrains.kotlin.psi.KtImportList
 
 data class ImportCustomConfiguration(
@@ -47,7 +54,7 @@ class ImportCustomsRule(config: Config) : Rule(config) {
                     CodeSmell(
                         issue,
                         Entity.from(importList.containingKtFile),
-                        "`%s` is prohibited in `%s`".format(ktImportDirective.importPath, currentPackage)
+                        "`%s` is prohibited in `%s`".format(ktImportDirective.importPath, currentPackage),
                     )
                 )
             }

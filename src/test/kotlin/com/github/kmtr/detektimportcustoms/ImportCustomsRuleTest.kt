@@ -1,14 +1,11 @@
 package com.github.kmtr.detektimportcustoms
 
-import io.gitlab.arturbosch.detekt.rules.KotlinCoreEnvironmentTest
 import io.gitlab.arturbosch.detekt.test.TestConfig
-import io.gitlab.arturbosch.detekt.test.compileAndLintWithContext
+import io.gitlab.arturbosch.detekt.test.lint
 import io.kotest.matchers.collections.shouldHaveSize
-import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
 import org.junit.jupiter.api.Test
 
-@KotlinCoreEnvironmentTest
-internal class ImportCustomsRuleTest(private val env: KotlinCoreEnvironment) {
+internal class ImportCustomsRuleTest {
 
     @Test
     fun `reports inner classes`() {
@@ -26,7 +23,7 @@ internal class ImportCustomsRuleTest(private val env: KotlinCoreEnvironment) {
             "^com.example.app::^java\\.text.*"
         )))
 
-        val findings = ImportCustomsRule(config).compileAndLintWithContext(env, code)
+        val findings = ImportCustomsRule(config).lint(code)
         findings shouldHaveSize 1
     }
 }

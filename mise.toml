@@ -1,0 +1,19 @@
+[tools]
+java = "temurin-21.0.11+10.0.LTS"
+gradle = "9.6.1"
+
+[tasks.build]
+description = "Build the plugin and run all checks"
+run = "gradle build"
+
+[tasks.test]
+description = "Run the JUnit 5 test suite"
+run = "gradle test"
+
+[tasks."test-snippets"]
+description = "Run tests with Kotlin snippet compilation enabled"
+run = "gradle test -Pcompile-test-snippets"
+
+[tasks."publish-local"]
+description = "Publish the snapshot artifact to Maven Local"
+run = "gradle publishToMavenLocal"
