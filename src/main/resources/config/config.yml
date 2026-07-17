@@ -1,3 +1,4 @@
-ImportCustomsRuleSet:
-  ImportCustomsRule:
+ImportCustoms:
+  DetectProhibitedImports:
     active: true
+    patterns: []
