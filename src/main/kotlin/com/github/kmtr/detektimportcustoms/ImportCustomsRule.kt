@@ -8,18 +8,30 @@ import io.gitlab.arturbosch.detekt.api.Issue
 import io.gitlab.arturbosch.detekt.api.Rule
 import io.gitlab.arturbosch.detekt.api.Severity
 import io.gitlab.arturbosch.detekt.api.config
+import org.jetbrains.kotlin.psi.KtImportDirective
 import org.jetbrains.kotlin.psi.KtImportList
+import java.util.regex.PatternSyntaxException
 
-data class ImportCustomConfiguration(
-    val targetPackageNamePattern: String,
-    val forbiddenImportPatterns: List<String>
+internal data class ImportRestriction(
+    val sourcePackagePattern: Regex,
+    val forbiddenReferencePatterns: List<Regex>,
+    val allowedReferencePatterns: List<Regex>,
+    val reason: String?,
+) {
+    fun appliesTo(sourcePackage: String): Boolean = sourcePackagePattern.matches(sourcePackage)
+
+    fun prohibits(reference: String): Boolean =
+        forbiddenReferencePatterns.any { it.matches(reference) } &&
+            allowedReferencePatterns.none { it.matches(reference) }
+}
+
+private data class ProhibitedImport(
+    val directive: KtImportDirective,
+    val path: String,
+    val reason: String?,
 )
 
-typealias ImportCustomConfigurations = List<ImportCustomConfiguration>
-
 class ImportCustomsRule(config: Config) : Rule(config) {
-    private val patterns: List<String> by config(arrayListOf())
-
     override val issue = Issue(
         "DetectProhibitedImports",
         Severity.CodeSmell,
@@ -27,36 +39,136 @@ class ImportCustomsRule(config: Config) : Rule(config) {
         Debt.FIVE_MINS,
     )
 
+    private val restrictions: List<*> by config(emptyList<Any>())
+    private val patterns: List<String> by config(emptyList())
+    private val parsedRestrictions = parseRestrictions(restrictions, patterns)
+
     override fun visitImportList(importList: KtImportList) {
         super.visitImportList(importList)
-        val configurations: ImportCustomConfigurations = patterns.map {
-            val patterns = it.split("::")
-            val basePackage = patterns[0]
-            val forbiddenImportPatterns = patterns[1].split(",")
-            ImportCustomConfiguration(
-                targetPackageNamePattern = basePackage,
-                forbiddenImportPatterns = forbiddenImportPatterns
-            )
-        }
 
-        val currentPackage = importList.containingKtFile.packageFqName
-        configurations
-            .filter {
-                currentPackage.toString().matches(it.targetPackageNamePattern.toRegex())
-            }.flatMap { conf ->
-                importList.imports.filter { ktImport ->
-                    conf.forbiddenImportPatterns.any {
-                        ktImport.importPath.toString().matches(it.toRegex())
+        val currentPackage = importList.containingKtFile.packageFqName.asString()
+        parsedRestrictions
+            .filter { it.appliesTo(currentPackage) }
+            .flatMap { restriction ->
+                importList.imports.mapNotNull { directive ->
+                    val importPath = directive.importPath?.pathStr ?: return@mapNotNull null
+                    if (restriction.prohibits(importPath)) {
+                        ProhibitedImport(directive, importPath, restriction.reason)
+                    } else {
+                        null
                     }
                 }
-            }.map { ktImportDirective ->
+            }.forEach { prohibitedImport ->
                 report(
                     CodeSmell(
                         issue,
                         Entity.from(importList.containingKtFile),
-                        "`%s` is prohibited in `%s`".format(ktImportDirective.importPath, currentPackage),
-                    )
+                        buildMessage(
+                            prohibitedImport.path,
+                            currentPackage,
+                            prohibitedImport.reason,
+                        ),
+                    ),
                 )
             }
     }
+
+    private fun buildMessage(reference: String, sourcePackage: String, reason: String?): String = buildString {
+        append("`")
+        append(reference)
+        append("` is prohibited in `")
+        append(sourcePackage)
+        append("`")
+        if (reason != null) {
+            append(": ")
+            append(reason)
+        }
+    }
 }
+
+private fun parseRestrictions(
+    rawRestrictions: List<*>,
+    legacyPatterns: List<String>,
+): List<ImportRestriction> {
+    if (legacyPatterns.isNotEmpty()) {
+        invalidConfiguration(
+            "The 'patterns' option has been replaced by structured 'restrictions'.",
+        )
+    }
+
+    return rawRestrictions.mapIndexed { index, rawRestriction ->
+        val path = "restrictions[$index]"
+        val values = rawRestriction as? Map<*, *>
+            ?: invalidConfiguration("$path must be a map.")
+        values.validateKeys(path)
+
+        val source = values.requiredString("from", path)
+        val forbidden = values.requiredStringList("disallow", path)
+        if (forbidden.isEmpty()) {
+            invalidConfiguration("$path.disallow must contain at least one pattern.")
+        }
+
+        ImportRestriction(
+            sourcePackagePattern = source.toValidatedRegex("$path.from"),
+            forbiddenReferencePatterns = forbidden.mapIndexed { patternIndex, pattern ->
+                pattern.toValidatedRegex("$path.disallow[$patternIndex]")
+            },
+            allowedReferencePatterns = values.optionalStringList("allow", path)
+                .mapIndexed { patternIndex, pattern ->
+                    pattern.toValidatedRegex("$path.allow[$patternIndex]")
+                },
+            reason = values.optionalString("reason", path),
+        )
+    }
+}
+
+private fun Map<*, *>.validateKeys(path: String) {
+    val unknownKeys = keys.filterNot { it in RESTRICTION_KEYS }
+    if (unknownKeys.isNotEmpty()) {
+        invalidConfiguration("$path contains unknown keys: ${unknownKeys.joinToString()}.")
+    }
+}
+
+private fun Map<*, *>.requiredString(key: String, path: String): String =
+    optionalString(key, path)
+        ?: invalidConfiguration("$path.$key must be a non-blank string.")
+
+private fun Map<*, *>.optionalString(key: String, path: String): String? {
+    val value = this[key] ?: return null
+    if (value !is String || value.isBlank()) {
+        invalidConfiguration("$path.$key must be a non-blank string.")
+    }
+    return value
+}
+
+private fun Map<*, *>.requiredStringList(key: String, path: String): List<String> {
+    val value = this[key] ?: invalidConfiguration("$path.$key is required.")
+    return value.toStringList("$path.$key")
+}
+
+private fun Map<*, *>.optionalStringList(key: String, path: String): List<String> {
+    val value = this[key] ?: return emptyList()
+    return value.toStringList("$path.$key")
+}
+
+private fun Any.toStringList(path: String): List<String> {
+    val values = this as? List<*>
+        ?: invalidConfiguration("$path must be a list of non-blank strings.")
+    return values.mapIndexed { index, value ->
+        if (value !is String || value.isBlank()) {
+            invalidConfiguration("$path[$index] must be a non-blank string.")
+        }
+        value
+    }
+}
+
+private fun String.toValidatedRegex(path: String): Regex = try {
+    toRegex()
+} catch (exception: PatternSyntaxException) {
+    invalidConfiguration("$path is not a valid regular expression: ${exception.description}.")
+}
+
+private fun invalidConfiguration(message: String): Nothing =
+    throw Config.InvalidConfigurationError(IllegalArgumentException(message))
+
+private val RESTRICTION_KEYS = setOf("from", "disallow", "allow", "reason")

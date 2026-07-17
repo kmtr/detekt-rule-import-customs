@@ -25,16 +25,30 @@ Rule set and rule IDs must match `ImportCustoms` and
 ImportCustoms:
   DetectProhibitedImports:
     active: true
-    patterns:
-      - '^com\.example\.pattern(?:\..*)?::^com\.example\.package2(?:\..*)?,^com\.example\.lib\.package3(?:\..*)?'
+    restrictions:
+      - from: '^com\.example\.pattern(?:\..*)?'
+        disallow:
+          - '^com\.example\.package2(?:\..*)?'
+          - '^com\.example\.lib\.package3(?:\..*)?'
+        allow:
+          - '^com\.example\.package2\.publicapi(?:\..*)?'
+        reason: 'Depend on the domain API instead.'
 ```
 
-The part before `::` selects source packages. Comma-separated expressions
-after `::` select forbidden imports. Expressions are Kotlin regular
-expressions and match the complete package or import name.
+Each restriction supports the following properties:
+
+- `from` selects source packages.
+- `disallow` contains forbidden import patterns and must not be empty.
+- `allow` optionally makes exceptions to `disallow`.
+- `reason` optionally adds migration guidance to findings.
+
+Expressions are Kotlin regular expressions and match the complete package or
+import name. Configuration is validated when Detekt creates the rule, so
+malformed entries and invalid expressions fail with the property path.
 
 The example prevents `com.example.pattern` and its subpackages from importing
-anything in `com.example.package2` or `com.example.lib.package3`.
+anything in `com.example.package2` or `com.example.lib.package3`, except for
+the explicitly allowed `com.example.package2.publicapi` package.
 
 ## Development
 
