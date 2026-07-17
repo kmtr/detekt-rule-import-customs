@@ -191,6 +191,56 @@ internal class ImportCustomsRuleTest {
     }
 
     @Test
+    fun `reports an import only once when restrictions overlap`() {
+        val findings = rule(
+            restriction(
+                from = "^com\\.example\\.app$",
+                disallow = listOf("^java\\.text\\..*$"),
+                reason = "First restriction.",
+            ),
+            restriction(
+                from = "^com\\.example\\..*$",
+                disallow = listOf("^java\\.text\\.NumberFormat$"),
+                reason = "Second restriction.",
+            ),
+        ).lint(
+            """
+            package com.example.app
+
+            import java.text.NumberFormat
+            """.trimIndent(),
+        )
+
+        findings shouldHaveSize 1
+        findings.single().message shouldBe
+            "`java.text.NumberFormat` is prohibited in `com.example.app`: First restriction.; Second restriction."
+    }
+
+    @Test
+    fun `reports a fully qualified chain only once when restrictions overlap`() {
+        val findings = rule(
+            restriction(
+                from = "^com\\.example\\.app$",
+                disallow = listOf("^java\\.text.*$"),
+            ),
+            restriction(
+                from = "^com\\.example\\..*$",
+                disallow = listOf("^java\\.text\\.NumberFormat$"),
+            ),
+        ).lint(
+            """
+            package com.example.app
+
+            fun formatter() = java.text.NumberFormat.getInstance()
+            """.trimIndent(),
+        )
+
+        findings shouldHaveSize 1
+        findings.single().message shouldBe
+            "`java.text.NumberFormat.getInstance` is prohibited in `com.example.app`"
+    }
+
+    @Test
     fun `rejects the legacy patterns option`() {
         val exception = shouldThrow<Config.InvalidConfigurationError> {
             ImportCustomsRule(

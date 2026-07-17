@@ -57,37 +57,38 @@ class ImportCustomsRule(config: Config) : Rule(config) {
     private val parsedRestrictions = parseRestrictions(restrictions, patterns)
     private var currentPackage = ""
     private var applicableRestrictions = emptyList<ImportRestriction>()
-    private val reportedQualifiedReferences = mutableSetOf<Pair<Int, String>>()
+    private val reportedQualifiedReferenceOffsets = mutableSetOf<Int>()
 
     override fun visitKtFile(file: KtFile) {
         currentPackage = file.packageFqName.asString()
         applicableRestrictions = parsedRestrictions.filter { it.appliesTo(currentPackage) }
-        reportedQualifiedReferences.clear()
+        reportedQualifiedReferenceOffsets.clear()
         super.visitKtFile(file)
     }
 
     override fun visitImportList(importList: KtImportList) {
         super.visitImportList(importList)
 
-        applicableRestrictions
-            .flatMap { restriction ->
-                importList.imports.mapNotNull { directive ->
-                    val importPath = directive.importPath?.pathStr ?: return@mapNotNull null
-                    val prohibitedReference = restriction.prohibitedCandidate(listOf(importPath))
-                        ?: return@mapNotNull null
-                    ProhibitedReference(directive, prohibitedReference, restriction.reason)
-                }
+        importList.imports
+            .mapNotNull { directive ->
+                val importPath = directive.importPath?.pathStr ?: return@mapNotNull null
+                findProhibitedReference(directive, listOf(importPath))
             }.forEach(::reportProhibitedReference)
     }
 
     override fun visitDotQualifiedExpression(expression: KtDotQualifiedExpression) {
-        super.visitDotQualifiedExpression(expression)
         if (expression.hasAncestor<KtImportDirective>() || expression.hasAncestor<KtPackageDirective>()) {
+            super.visitDotQualifiedExpression(expression)
             return
         }
 
-        val segments = expression.qualifiedNameSegments() ?: return
+        val segments = expression.qualifiedNameSegments()
+        if (segments == null) {
+            super.visitDotQualifiedExpression(expression)
+            return
+        }
         reportQualifiedReference(expression, segments)
+        super.visitDotQualifiedExpression(expression)
     }
 
     override fun visitUserType(type: KtUserType) {
@@ -106,15 +107,32 @@ class ImportCustomsRule(config: Config) : Rule(config) {
         val candidates = segments.indices.reversed().map { lastIndex ->
             segments.subList(0, lastIndex + 1).joinToString(".")
         }
-        applicableRestrictions.forEach { restriction ->
-            val prohibitedReference = restriction.prohibitedCandidate(candidates)
-                ?: return@forEach
-            if (reportedQualifiedReferences.add(element.textOffset to prohibitedReference)) {
-                reportProhibitedReference(
-                    ProhibitedReference(element, prohibitedReference, restriction.reason),
-                )
+        val prohibitedReference = findProhibitedReference(element, candidates) ?: return
+        if (reportedQualifiedReferenceOffsets.add(element.textOffset)) {
+            reportProhibitedReference(prohibitedReference)
+        }
+    }
+
+    private fun findProhibitedReference(
+        element: KtElement,
+        candidates: List<String>,
+    ): ProhibitedReference? {
+        val matches = applicableRestrictions.mapNotNull { restriction ->
+            restriction.prohibitedCandidate(candidates)?.let { candidate ->
+                candidate to restriction.reason
             }
         }
+        if (matches.isEmpty()) {
+            return null
+        }
+
+        val reference = candidates.first { candidate -> matches.any { it.first == candidate } }
+        val reasons = matches.mapNotNull { it.second }.distinct()
+        return ProhibitedReference(
+            element = element,
+            reference = reference,
+            reason = reasons.takeIf { it.isNotEmpty() }?.joinToString("; "),
+        )
     }
 
     private fun reportProhibitedReference(prohibitedReference: ProhibitedReference) {
