@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.github.kmtr.detektimportcustoms"
-version = "1.0-SNAPSHOT"
+version = providers.gradleProperty("version").orElse("1.0.0").get()
 
 repositories {
     mavenCentral()
@@ -15,6 +15,7 @@ repositories {
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
+    withSourcesJar()
 }
 
 kotlin {
@@ -44,6 +45,42 @@ publishing {
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
+            pom {
+                name = "Detekt Import Customs"
+                description = "Directional dependency restrictions for Kotlin imports and fully qualified references."
+                url = "https://github.com/kmtr/detekt-rule-import-customs"
+                licenses {
+                    license {
+                        name = "The Apache License, Version 2.0"
+                        url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+                    }
+                }
+                developers {
+                    developer {
+                        id = "kmtr"
+                        name = "kmtr"
+                    }
+                }
+                scm {
+                    connection = "scm:git:https://github.com/kmtr/detekt-rule-import-customs.git"
+                    developerConnection = "scm:git:ssh://git@github.com/kmtr/detekt-rule-import-customs.git"
+                    url = "https://github.com/kmtr/detekt-rule-import-customs"
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = "project"
+            url = uri(layout.buildDirectory.dir("repository").get().asFile)
+        }
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/kmtr/detekt-rule-import-customs")
+            credentials {
+                username = providers.environmentVariable("GITHUB_ACTOR").orNull
+                password = providers.environmentVariable("GITHUB_TOKEN").orNull
+            }
         }
     }
 }

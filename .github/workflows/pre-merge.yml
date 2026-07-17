@@ -30,8 +30,8 @@ jobs:
         uses: jdx/mise-action@v4
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
-      - name: Check that the publish plugin works
-        run: mise run publish-local
+      - name: Check the published Maven repository
+        run: mise run publish-repository
   compile-test-snippets:
     name: Compile test snippets
     runs-on: ubuntu-latest

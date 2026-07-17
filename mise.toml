@@ -15,5 +15,9 @@ description = "Run tests with Kotlin snippet compilation enabled"
 run = "gradle test -Pcompile-test-snippets"
 
 [tasks."publish-local"]
-description = "Publish the snapshot artifact to Maven Local"
+description = "Publish the artifact to Maven Local"
 run = "gradle publishToMavenLocal"
+
+[tasks."publish-repository"]
+description = "Publish the artifact to build/repository for verification"
+run = "gradle publishMavenJavaPublicationToProjectRepository"

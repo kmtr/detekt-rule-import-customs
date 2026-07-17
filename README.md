@@ -6,16 +6,29 @@ fully qualified references to forbidden packages.
 
 ## Installation
 
-Build the plugin and add the resulting JAR to the consuming project's Detekt
-plugins configuration:
+Versioned artifacts are published to GitHub Packages. Add the repository and
+plugin dependency to the consuming project:
 
 ```kotlin
+repositories {
+    maven {
+        url = uri("https://maven.pkg.github.com/kmtr/detekt-rule-import-customs")
+        credentials {
+            username = providers.environmentVariable("GITHUB_ACTOR").orNull
+            password = providers.environmentVariable("GITHUB_TOKEN").orNull
+        }
+    }
+}
+
 dependencies {
-    detektPlugins(files("path/to/detekt-import-customs-1.0-SNAPSHOT.jar"))
+    detektPlugins("com.github.kmtr.detektimportcustoms:detekt-import-customs:1.0.0")
 }
 ```
 
-The JAR is created under `build/libs/` by `mise run build`.
+GitHub Packages requires a token with package read access, including for public
+packages. For local development, `mise run publish-repository` creates a Maven
+repository under `build/repository`; `mise run publish-local` installs the same
+artifact into Maven Local.
 
 ## Configuration
 
@@ -71,6 +84,8 @@ The required Temurin JDK and Gradle versions are managed with
 mise install
 mise run test
 mise run build
+mise run test-snippets
+mise run publish-repository
 ```
 
 Run `mise tasks` to list all available project tasks. The configured Gradle
