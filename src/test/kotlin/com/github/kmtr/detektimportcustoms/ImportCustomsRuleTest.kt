@@ -95,6 +95,102 @@ internal class ImportCustomsRuleTest {
     }
 
     @Test
+    fun `reports a fully qualified type reference`() {
+        val findings = rule(
+            restriction(
+                from = "^com\\.example\\.app$",
+                disallow = listOf("^java\\.text\\.NumberFormat$"),
+            ),
+        ).lint(
+            """
+            package com.example.app
+
+            class Example(val formatter: java.text.NumberFormat)
+            """.trimIndent(),
+        )
+
+        findings shouldHaveSize 1
+        findings.single().message shouldBe
+            "`java.text.NumberFormat` is prohibited in `com.example.app`"
+        findings.single().entity.location.source.line shouldBe 3
+    }
+
+    @Test
+    fun `reports a fully qualified constructor call`() {
+        val findings = rule(
+            restriction(
+                from = "^com\\.example\\.app$",
+                disallow = listOf("^java\\.text\\.NumberFormat$"),
+            ),
+        ).lint(
+            """
+            package com.example.app
+
+            fun formatter() = java.text.NumberFormat()
+            """.trimIndent(),
+        )
+
+        findings shouldHaveSize 1
+    }
+
+    @Test
+    fun `matches a class pattern through a fully qualified member call`() {
+        val findings = rule(
+            restriction(
+                from = "^com\\.example\\.app$",
+                disallow = listOf("^java\\.text\\.NumberFormat$"),
+            ),
+        ).lint(
+            """
+            package com.example.app
+
+            fun formatter() = java.text.NumberFormat.getInstance()
+            """.trimIndent(),
+        )
+
+        findings shouldHaveSize 1
+        findings.single().message shouldBe
+            "`java.text.NumberFormat` is prohibited in `com.example.app`"
+    }
+
+    @Test
+    fun `does not report an allowed fully qualified reference`() {
+        val findings = rule(
+            restriction(
+                from = "^com\\.example\\.app$",
+                disallow = listOf("^java\\.text\\..*$"),
+                allow = listOf("^java\\.text\\.NumberFormat$"),
+            ),
+        ).lint(
+            """
+            package com.example.app
+
+            fun formatter() = java.text.NumberFormat.getInstance()
+            """.trimIndent(),
+        )
+
+        findings.shouldBeEmpty()
+    }
+
+    @Test
+    fun `does not treat the package declaration as a qualified reference`() {
+        val findings = rule(
+            restriction(
+                from = "^com\\.example\\.app$",
+                disallow = listOf("^com\\.example\\.app$"),
+            ),
+        ).lint(
+            """
+            package com.example.app
+
+            class Example
+            """.trimIndent(),
+        )
+
+        findings.shouldBeEmpty()
+    }
+
+    @Test
     fun `rejects the legacy patterns option`() {
         val exception = shouldThrow<Config.InvalidConfigurationError> {
             ImportCustomsRule(

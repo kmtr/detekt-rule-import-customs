@@ -8,8 +8,16 @@ import io.gitlab.arturbosch.detekt.api.Issue
 import io.gitlab.arturbosch.detekt.api.Rule
 import io.gitlab.arturbosch.detekt.api.Severity
 import io.gitlab.arturbosch.detekt.api.config
+import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
+import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.KtExpression
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtImportDirective
 import org.jetbrains.kotlin.psi.KtImportList
+import org.jetbrains.kotlin.psi.KtNameReferenceExpression
+import org.jetbrains.kotlin.psi.KtPackageDirective
+import org.jetbrains.kotlin.psi.KtUserType
 import java.util.regex.PatternSyntaxException
 
 internal data class ImportRestriction(
@@ -20,14 +28,19 @@ internal data class ImportRestriction(
 ) {
     fun appliesTo(sourcePackage: String): Boolean = sourcePackagePattern.matches(sourcePackage)
 
-    fun prohibits(reference: String): Boolean =
-        forbiddenReferencePatterns.any { it.matches(reference) } &&
-            allowedReferencePatterns.none { it.matches(reference) }
+    fun prohibitedCandidate(candidates: List<String>): String? {
+        if (candidates.any { candidate -> allowedReferencePatterns.any { it.matches(candidate) } }) {
+            return null
+        }
+        return candidates.firstOrNull { candidate ->
+            forbiddenReferencePatterns.any { it.matches(candidate) }
+        }
+    }
 }
 
-private data class ProhibitedImport(
-    val directive: KtImportDirective,
-    val path: String,
+private data class ProhibitedReference(
+    val element: KtElement,
+    val reference: String,
     val reason: String?,
 )
 
@@ -42,35 +55,80 @@ class ImportCustomsRule(config: Config) : Rule(config) {
     private val restrictions: List<*> by config(emptyList<Any>())
     private val patterns: List<String> by config(emptyList())
     private val parsedRestrictions = parseRestrictions(restrictions, patterns)
+    private var currentPackage = ""
+    private var applicableRestrictions = emptyList<ImportRestriction>()
+    private val reportedQualifiedReferences = mutableSetOf<Pair<Int, String>>()
+
+    override fun visitKtFile(file: KtFile) {
+        currentPackage = file.packageFqName.asString()
+        applicableRestrictions = parsedRestrictions.filter { it.appliesTo(currentPackage) }
+        reportedQualifiedReferences.clear()
+        super.visitKtFile(file)
+    }
 
     override fun visitImportList(importList: KtImportList) {
         super.visitImportList(importList)
 
-        val currentPackage = importList.containingKtFile.packageFqName.asString()
-        parsedRestrictions
-            .filter { it.appliesTo(currentPackage) }
+        applicableRestrictions
             .flatMap { restriction ->
                 importList.imports.mapNotNull { directive ->
                     val importPath = directive.importPath?.pathStr ?: return@mapNotNull null
-                    if (restriction.prohibits(importPath)) {
-                        ProhibitedImport(directive, importPath, restriction.reason)
-                    } else {
-                        null
-                    }
+                    val prohibitedReference = restriction.prohibitedCandidate(listOf(importPath))
+                        ?: return@mapNotNull null
+                    ProhibitedReference(directive, prohibitedReference, restriction.reason)
                 }
-            }.forEach { prohibitedImport ->
-                report(
-                    CodeSmell(
-                        issue,
-                        Entity.from(prohibitedImport.directive),
-                        buildMessage(
-                            prohibitedImport.path,
-                            currentPackage,
-                            prohibitedImport.reason,
-                        ),
-                    ),
+            }.forEach(::reportProhibitedReference)
+    }
+
+    override fun visitDotQualifiedExpression(expression: KtDotQualifiedExpression) {
+        super.visitDotQualifiedExpression(expression)
+        if (expression.hasAncestor<KtImportDirective>() || expression.hasAncestor<KtPackageDirective>()) {
+            return
+        }
+
+        val segments = expression.qualifiedNameSegments() ?: return
+        reportQualifiedReference(expression, segments)
+    }
+
+    override fun visitUserType(type: KtUserType) {
+        super.visitUserType(type)
+        if (type.parent is KtUserType) {
+            return
+        }
+
+        val segments = type.qualifiedNameSegments()
+        if (segments.size > 1) {
+            reportQualifiedReference(type, segments)
+        }
+    }
+
+    private fun reportQualifiedReference(element: KtElement, segments: List<String>) {
+        val candidates = segments.indices.reversed().map { lastIndex ->
+            segments.subList(0, lastIndex + 1).joinToString(".")
+        }
+        applicableRestrictions.forEach { restriction ->
+            val prohibitedReference = restriction.prohibitedCandidate(candidates)
+                ?: return@forEach
+            if (reportedQualifiedReferences.add(element.textOffset to prohibitedReference)) {
+                reportProhibitedReference(
+                    ProhibitedReference(element, prohibitedReference, restriction.reason),
                 )
             }
+        }
+    }
+
+    private fun reportProhibitedReference(prohibitedReference: ProhibitedReference) {
+        report(
+            CodeSmell(
+                issue,
+                Entity.from(prohibitedReference.element),
+                buildMessage(
+                    prohibitedReference.reference,
+                    currentPackage,
+                    prohibitedReference.reason,
+                ),
+            ),
+        )
     }
 
     private fun buildMessage(reference: String, sourcePackage: String, reason: String?): String = buildString {
@@ -84,6 +142,37 @@ class ImportCustomsRule(config: Config) : Rule(config) {
             append(reason)
         }
     }
+}
+
+private fun KtExpression.qualifiedNameSegments(): List<String>? = when (this) {
+    is KtNameReferenceExpression -> listOf(getReferencedName())
+    is KtDotQualifiedExpression -> {
+        val receiverSegments = receiverExpression.qualifiedNameSegments() ?: return null
+        val selectorSegments = selectorExpression?.qualifiedNameSegments() ?: return null
+        receiverSegments + selectorSegments
+    }
+    is KtCallExpression -> calleeExpression?.qualifiedNameSegments()
+    else -> null
+}
+
+private fun KtUserType.qualifiedNameSegments(): List<String> = buildList {
+    var currentType: KtUserType? = this@qualifiedNameSegments
+    while (currentType != null) {
+        currentType.getReferencedName()?.let(::add)
+        currentType = currentType.qualifier
+    }
+    reverse()
+}
+
+private inline fun <reified T : KtElement> KtElement.hasAncestor(): Boolean {
+    var current = parent
+    while (current != null) {
+        if (current is T) {
+            return true
+        }
+        current = current.parent
+    }
+    return false
 }
 
 private fun parseRestrictions(

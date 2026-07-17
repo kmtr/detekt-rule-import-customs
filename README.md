@@ -1,7 +1,8 @@
 # Detekt Import Customs
 
-Detekt Import Customs adds directional import restrictions to Kotlin projects.
-Each restriction selects source packages and reports imports of forbidden packages.
+Detekt Import Customs adds directional dependency restrictions to Kotlin
+projects. Each restriction selects source packages and reports both imports and
+fully qualified references to forbidden packages.
 
 ## Installation
 
@@ -48,7 +49,8 @@ malformed entries and invalid expressions fail with the property path.
 
 The example prevents `com.example.pattern` and its subpackages from importing
 anything in `com.example.package2` or `com.example.lib.package3`, except for
-the explicitly allowed `com.example.package2.publicapi` package.
+the explicitly allowed `com.example.package2.publicapi` package. Using a fully
+qualified reference instead of an import is subject to the same restriction.
 
 ## Development
 
