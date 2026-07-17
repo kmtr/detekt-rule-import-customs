@@ -48,7 +48,7 @@ class ImportCustomsRule(config: Config) : Rule(config) {
     override val issue = Issue(
         "DetectProhibitedImports",
         Severity.CodeSmell,
-        "This rule reports the violations of prohibited imports",
+        "This rule reports prohibited dependency references",
         Debt.FIVE_MINS,
     )
 
@@ -131,7 +131,7 @@ class ImportCustomsRule(config: Config) : Rule(config) {
         return ProhibitedReference(
             element = element,
             reference = reference,
-            reason = reasons.takeIf { it.isNotEmpty() }?.joinToString("; "),
+            reason = reasons.takeIf { it.isNotEmpty() }?.joinToString(" "),
         )
     }
 

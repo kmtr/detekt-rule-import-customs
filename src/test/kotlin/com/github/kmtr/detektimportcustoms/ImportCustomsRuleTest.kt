@@ -213,7 +213,7 @@ internal class ImportCustomsRuleTest {
 
         findings shouldHaveSize 1
         findings.single().message shouldBe
-            "`java.text.NumberFormat` is prohibited in `com.example.app`: First restriction.; Second restriction."
+            "`java.text.NumberFormat` is prohibited in `com.example.app`: First restriction. Second restriction."
     }
 
     @Test
