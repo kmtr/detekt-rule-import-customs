@@ -13,28 +13,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
+      - name: Setup mise
+        uses: jdx/mise-action@v4
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
       - name: Run tests
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: test
+        run: mise run test
   publish:
     name: Check that the publish plugin works
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
+      - name: Setup mise
+        uses: jdx/mise-action@v4
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
       - name: Check that the publish plugin works
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: publishToMavenLocal
+        run: mise run publish-local
   compile-test-snippets:
     name: Compile test snippets
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
+      - name: Setup mise
+        uses: jdx/mise-action@v4
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
       - name: Compile the snippets in the tests
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: test -Pcompile-test-snippets
+        run: mise run test-snippets
