@@ -52,6 +52,16 @@ anything in `com.example.package2` or `com.example.lib.package3`, except for
 the explicitly allowed `com.example.package2.publicapi` package. Using a fully
 qualified reference instead of an import is subject to the same restriction.
 
+## Compatibility
+
+This release targets Detekt 1.23.8, Kotlin 2.0.21, and JVM 1.8 bytecode. It can
+therefore be loaded by Detekt processes running on JDK 8 through JDK 21. The
+build itself uses JDK 21.
+
+Detekt 2.0 uses a binary-incompatible extension API and is not supported by
+this artifact while the 2.0 line remains in alpha. A separate artifact or a
+major release will be required for Detekt 2.0 support.
+
 ## Development
 
 The required Temurin JDK and Gradle versions are managed with

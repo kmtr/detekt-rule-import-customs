@@ -1,6 +1,6 @@
 [tools]
 java = "temurin-21.0.11+10.0.LTS"
-gradle = "9.6.1"
+gradle = "8.12.1"
 
 [tasks.build]
 description = "Build the plugin and run all checks"

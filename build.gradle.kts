@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    kotlin("jvm") version "2.4.10"
+    kotlin("jvm") version "2.0.21"
     `maven-publish`
 }
 
@@ -13,13 +13,13 @@ repositories {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 kotlin {
     compilerOptions {
-        jvmTarget = JvmTarget.JVM_21
+        jvmTarget = JvmTarget.JVM_1_8
     }
 }
 
@@ -28,8 +28,8 @@ dependencies {
 
     testImplementation("io.gitlab.arturbosch.detekt:detekt-core:1.23.8")
     testImplementation("io.gitlab.arturbosch.detekt:detekt-test:1.23.8")
-    testImplementation("io.kotest:kotest-assertions-core:6.2.2")
-    testImplementation(platform("org.junit:junit-bom:6.1.2"))
+    testImplementation("io.kotest:kotest-assertions-core:5.9.1")
+    testImplementation(platform("org.junit:junit-bom:5.10.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
