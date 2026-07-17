@@ -71,6 +71,32 @@ This release targets Detekt 1.23.8, Kotlin 2.0.21, and JVM 1.8 bytecode. It can
 therefore be loaded by Detekt processes running on JDK 8 through JDK 21. The
 build itself uses JDK 21.
 
+### JVM compatibility policy
+
+The JDK used to build the project and the bytecode level published to users are
+managed independently. Updating the development JDK does not by itself justify
+raising the published JVM target. The artifact remains on JVM 1.8 while the
+supported Detekt line can run on it, so consumers are not forced to upgrade
+their Detekt runtime JDK.
+
+When changing JVM compatibility:
+
+- Keep Java `sourceCompatibility` and `targetCompatibility` aligned with
+  Kotlin `jvmTarget` in `build.gradle.kts`.
+- Keep the Kotlin compiler and standard library aligned with the version used
+  by the supported Detekt release to avoid contaminating Detekt's runtime
+  classpath with an incompatible Kotlin version.
+- Raise the minimum JVM only when a required dependency or supported Detekt
+  release no longer supports the current target. Treat that change as a
+  consumer-facing compatibility break and document it in the release notes.
+- Verify `mise run build`, `mise run test-snippets`, and
+  `mise run publish-repository`, then inspect the published rule class with
+  `javap -verbose` to confirm the expected class-file major version. JVM 1.8
+  corresponds to major version 52.
+
+Any JVM target change must update this section, the Gradle settings, the mise
+toolchain, and CI in the same pull request.
+
 Detekt 2.0 uses a binary-incompatible extension API and is not supported by
 this artifact while the 2.0 line remains in alpha. A separate artifact or a
 major release will be required for Detekt 2.0 support.
