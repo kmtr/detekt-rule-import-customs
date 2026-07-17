@@ -18,8 +18,8 @@ jobs:
         uses: jdx/mise-action@v4
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
-      - name: Run tests
-        run: mise run test
+      - name: Build plugin and run tests
+        run: mise run build
   publish:
     name: Check that the publish plugin works
     runs-on: ubuntu-latest
