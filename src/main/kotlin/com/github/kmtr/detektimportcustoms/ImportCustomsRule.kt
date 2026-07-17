@@ -62,7 +62,7 @@ class ImportCustomsRule(config: Config) : Rule(config) {
                 report(
                     CodeSmell(
                         issue,
-                        Entity.from(importList.containingKtFile),
+                        Entity.from(prohibitedImport.directive),
                         buildMessage(
                             prohibitedImport.path,
                             currentPackage,

@@ -29,6 +29,8 @@ internal class ImportCustomsRuleTest {
         )
 
         findings shouldHaveSize 1
+        findings.single().entity.location.source.line shouldBe 3
+        findings.single().entity.location.source.column shouldBe 1
     }
 
     @Test
