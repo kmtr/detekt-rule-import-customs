@@ -75,6 +75,44 @@ internal class ImportCustomsRuleTest {
     }
 
     @Test
+    fun `reports a prohibited wildcard import`() {
+        val findings = rule(
+            restriction(
+                from = "^com\\.example\\.app$",
+                disallow = listOf("^java\\.text\\..*$"),
+            ),
+        ).lint(
+            """
+            package com.example.app
+
+            import java.text.*
+            """.trimIndent(),
+        )
+
+        findings shouldHaveSize 1
+    }
+
+    @Test
+    fun `does not report references outside the selected source package`() {
+        val findings = rule(
+            restriction(
+                from = "^com\\.example\\.app$",
+                disallow = listOf("^java\\.text\\..*$"),
+            ),
+        ).lint(
+            """
+            package com.example.library
+
+            import java.text.NumberFormat
+
+            class Example(val formatter: java.text.NumberFormat)
+            """.trimIndent(),
+        )
+
+        findings.shouldBeEmpty()
+    }
+
+    @Test
     fun `includes the configured reason in the finding`() {
         val findings = rule(
             restriction(
@@ -170,6 +208,25 @@ internal class ImportCustomsRuleTest {
         )
 
         findings.shouldBeEmpty()
+    }
+
+    @Test
+    fun `reports a fully qualified annotation`() {
+        val findings = rule(
+            restriction(
+                from = "^com\\.example\\.app$",
+                disallow = listOf("^java\\.lang\\.Deprecated$"),
+            ),
+        ).lint(
+            """
+            package com.example.app
+
+            @java.lang.Deprecated
+            class Example
+            """.trimIndent(),
+        )
+
+        findings shouldHaveSize 1
     }
 
     @Test
@@ -280,6 +337,37 @@ internal class ImportCustomsRuleTest {
 
         exception.cause?.message shouldBe
             "restrictions[0].from is not a valid regular expression: Unclosed character class."
+    }
+
+    @Test
+    fun `rejects unknown restriction properties`() {
+        val exception = shouldThrow<Config.InvalidConfigurationError> {
+            rule(
+                mapOf(
+                    "from" to "^com\\.example$",
+                    "disallow" to listOf("^java\\.text$"),
+                    "because" to "Use an abstraction.",
+                ),
+            )
+        }
+
+        exception.cause?.message shouldBe
+            "restrictions[0] contains unknown keys: because."
+    }
+
+    @Test
+    fun `rejects an empty disallow list`() {
+        val exception = shouldThrow<Config.InvalidConfigurationError> {
+            rule(
+                restriction(
+                    from = "^com\\.example$",
+                    disallow = emptyList(),
+                ),
+            )
+        }
+
+        exception.cause?.message shouldBe
+            "restrictions[0].disallow must contain at least one pattern."
     }
 
     private fun rule(vararg restrictions: Map<String, Any>): ImportCustomsRule =
