@@ -24,7 +24,7 @@ internal data class ImportRestriction(
     val sourcePackagePattern: Regex,
     val forbiddenReferencePatterns: List<Regex>,
     val allowedReferencePatterns: List<Regex>,
-    val reason: String?,
+    val message: String?,
 ) {
     fun appliesTo(sourcePackage: String): Boolean = sourcePackagePattern.matches(sourcePackage)
 
@@ -41,14 +41,14 @@ internal data class ImportRestriction(
 private data class ProhibitedReference(
     val element: KtElement,
     val reference: String,
-    val reason: String?,
+    val message: String?,
 )
 
 class ImportCustomsRule(config: Config) : Rule(config) {
     override val issue = Issue(
-        "DetectProhibitedImports",
+        "ForbiddenDependency",
         Severity.CodeSmell,
-        "This rule reports prohibited dependency references",
+        "This rule reports forbidden dependency references",
         Debt.FIVE_MINS,
     )
 
@@ -119,7 +119,7 @@ class ImportCustomsRule(config: Config) : Rule(config) {
     ): ProhibitedReference? {
         val matches = applicableRestrictions.mapNotNull { restriction ->
             restriction.prohibitedCandidate(candidates)?.let { candidate ->
-                candidate to restriction.reason
+                candidate to restriction.message
             }
         }
         if (matches.isEmpty()) {
@@ -127,11 +127,11 @@ class ImportCustomsRule(config: Config) : Rule(config) {
         }
 
         val reference = candidates.first { candidate -> matches.any { it.first == candidate } }
-        val reasons = matches.mapNotNull { it.second }.distinct()
+        val messages = matches.mapNotNull { it.second }.distinct()
         return ProhibitedReference(
             element = element,
             reference = reference,
-            reason = reasons.takeIf { it.isNotEmpty() }?.joinToString(" "),
+            message = messages.takeIf { it.isNotEmpty() }?.joinToString(" "),
         )
     }
 
@@ -143,21 +143,21 @@ class ImportCustomsRule(config: Config) : Rule(config) {
                 buildMessage(
                     prohibitedReference.reference,
                     currentPackage,
-                    prohibitedReference.reason,
+                    prohibitedReference.message,
                 ),
             ),
         )
     }
 
-    private fun buildMessage(reference: String, sourcePackage: String, reason: String?): String = buildString {
+    private fun buildMessage(reference: String, sourcePackage: String, message: String?): String = buildString {
         append("`")
         append(reference)
         append("` is prohibited in `")
         append(sourcePackage)
         append("`")
-        if (reason != null) {
+        if (message != null) {
             append(": ")
-            append(reason)
+            append(message)
         }
     }
 }
@@ -210,21 +210,21 @@ private fun parseRestrictions(
         values.validateKeys(path)
 
         val source = values.requiredString("from", path)
-        val forbidden = values.requiredStringList("disallow", path)
+        val forbidden = values.requiredStringList("deny", path)
         if (forbidden.isEmpty()) {
-            invalidConfiguration("$path.disallow must contain at least one pattern.")
+            invalidConfiguration("$path.deny must contain at least one pattern.")
         }
 
         ImportRestriction(
             sourcePackagePattern = source.toValidatedRegex("$path.from"),
             forbiddenReferencePatterns = forbidden.mapIndexed { patternIndex, pattern ->
-                pattern.toValidatedRegex("$path.disallow[$patternIndex]")
+                pattern.toValidatedRegex("$path.deny[$patternIndex]")
             },
             allowedReferencePatterns = values.optionalStringList("allow", path)
                 .mapIndexed { patternIndex, pattern ->
                     pattern.toValidatedRegex("$path.allow[$patternIndex]")
                 },
-            reason = values.optionalString("reason", path),
+            message = values.optionalString("message", path),
         )
     }
 }
@@ -278,4 +278,4 @@ private fun String.toValidatedRegex(path: String): Regex = try {
 private fun invalidConfiguration(message: String): Nothing =
     throw Config.InvalidConfigurationError(IllegalArgumentException(message))
 
-private val RESTRICTION_KEYS = setOf("from", "disallow", "allow", "reason")
+private val RESTRICTION_KEYS = setOf("from", "deny", "allow", "message")

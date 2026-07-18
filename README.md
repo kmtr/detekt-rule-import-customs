@@ -33,28 +33,28 @@ artifact into Maven Local.
 ## Configuration
 
 Rule set and rule IDs must match `ImportCustoms` and
-`DetectProhibitedImports` respectively:
+`ForbiddenDependency` respectively:
 
 ```yaml
 ImportCustoms:
-  DetectProhibitedImports:
+  ForbiddenDependency:
     active: true
     restrictions:
       - from: '^com\.example\.pattern(?:\..*)?'
-        disallow:
+        deny:
           - '^com\.example\.package2(?:\..*)?'
           - '^com\.example\.lib\.package3(?:\..*)?'
         allow:
           - '^com\.example\.package2\.publicapi(?:\..*)?'
-        reason: 'Depend on the domain API instead.'
+        message: 'Depend on the domain API instead.'
 ```
 
 Each restriction supports the following properties:
 
 - `from` selects source packages.
-- `disallow` contains forbidden import patterns and must not be empty.
-- `allow` optionally makes exceptions to `disallow`.
-- `reason` optionally adds migration guidance to findings.
+- `deny` contains forbidden reference patterns and must not be empty.
+- `allow` optionally makes exceptions to `deny`.
+- `message` optionally adds migration guidance to findings.
 
 Expressions are Kotlin regular expressions and match the complete package or
 import name. Configuration is validated when Detekt creates the rule, so

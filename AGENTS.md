@@ -24,7 +24,7 @@ Run `mise exec -- gradle clean` for Gradle tasks without a predefined mise task.
 
 ## Coding Style & Naming Conventions
 
-Follow the official Kotlin style selected by `kotlin.code.style=official`. Use four-space indentation, LF line endings, a final newline, trailing commas in multiline declarations, and idiomatic immutable collections. Use `UpperCamelCase` for classes and data classes, `lowerCamelCase` for functions and properties, and descriptive Detekt issue IDs such as `DetectProhibitedImports`. Keep package names lowercase under `com.github.kmtr.detektimportcustoms`. No standalone formatter is configured, so match the surrounding source and let compilation catch syntax issues.
+Follow the official Kotlin style selected by `kotlin.code.style=official`. Use four-space indentation, LF line endings, a final newline, trailing commas in multiline declarations, and idiomatic immutable collections. Use `UpperCamelCase` for classes and data classes, `lowerCamelCase` for functions and properties, and descriptive Detekt issue IDs such as `ForbiddenDependency`. Keep package names lowercase under `com.github.kmtr.detektimportcustoms`. No standalone formatter is configured, so match the surrounding source and let compilation catch syntax issues.
 
 ## Testing Guidelines
 

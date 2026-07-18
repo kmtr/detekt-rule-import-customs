@@ -19,14 +19,14 @@ internal class ImportCustomsRuleSetIntegrationTest {
             StringReader(
                 """
                 ImportCustoms:
-                  DetectProhibitedImports:
+                  ForbiddenDependency:
                     active: true
                     restrictions:
                       - from: '^com\.example\.app(?:\..*)?'
-                        disallow:
+                        deny:
                           - '^java\.text\..*'
                           - '^java\.time\..*'
-                        reason: 'Use the application abstractions.'
+                        message: 'Use the application abstractions.'
                 """.trimIndent(),
             ),
         )
@@ -44,6 +44,7 @@ internal class ImportCustomsRuleSetIntegrationTest {
         )
 
         ruleSet.id shouldBe "ImportCustoms"
+        rule.issue.id shouldBe "ForbiddenDependency"
         findings shouldHaveSize 2
         findings.map { it.entity.location.source.line } shouldBe listOf(3, 5)
     }
@@ -55,7 +56,7 @@ internal class ImportCustomsRuleSetIntegrationTest {
         val config = configStream.reader().use(YamlConfig::load)
         val ruleConfig = config
             .subConfig(provider.ruleSetId)
-            .subConfig("DetectProhibitedImports")
+            .subConfig("ForbiddenDependency")
 
         ruleConfig.valueOrNull<List<*>>("restrictions") shouldNotBe null
     }

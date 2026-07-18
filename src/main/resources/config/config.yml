@@ -1,4 +1,4 @@
 ImportCustoms:
-  DetectProhibitedImports:
+  ForbiddenDependency:
     active: true
     restrictions: []

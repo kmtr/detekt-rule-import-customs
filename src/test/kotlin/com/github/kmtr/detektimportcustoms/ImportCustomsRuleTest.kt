@@ -16,7 +16,7 @@ internal class ImportCustomsRuleTest {
         val findings = rule(
             restriction(
                 from = "^com\\.example\\.app$",
-                disallow = listOf("^java\\.text\\..*$"),
+                deny = listOf("^java\\.text\\..*$"),
             ),
         ).lint(
             """
@@ -38,7 +38,7 @@ internal class ImportCustomsRuleTest {
         val findings = rule(
             restriction(
                 from = "^com\\.example\\.app$",
-                disallow = listOf("^java\\.text\\..*$"),
+                deny = listOf("^java\\.text\\..*$"),
                 allow = listOf("^java\\.text\\.NumberFormat$"),
             ),
         ).lint(
@@ -59,7 +59,7 @@ internal class ImportCustomsRuleTest {
         val findings = rule(
             restriction(
                 from = "^com\\.example\\.app$",
-                disallow = listOf("^java\\.text\\.NumberFormat$"),
+                deny = listOf("^java\\.text\\.NumberFormat$"),
             ),
         ).lint(
             """
@@ -79,7 +79,7 @@ internal class ImportCustomsRuleTest {
         val findings = rule(
             restriction(
                 from = "^com\\.example\\.app$",
-                disallow = listOf("^java\\.text\\..*$"),
+                deny = listOf("^java\\.text\\..*$"),
             ),
         ).lint(
             """
@@ -97,7 +97,7 @@ internal class ImportCustomsRuleTest {
         val findings = rule(
             restriction(
                 from = "^com\\.example\\.app$",
-                disallow = listOf("^java\\.text\\..*$"),
+                deny = listOf("^java\\.text\\..*$"),
             ),
         ).lint(
             """
@@ -113,12 +113,12 @@ internal class ImportCustomsRuleTest {
     }
 
     @Test
-    fun `includes the configured reason in the finding`() {
+    fun `includes the configured message in the finding`() {
         val findings = rule(
             restriction(
                 from = "^com\\.example\\.app$",
-                disallow = listOf("^java\\.text\\..*$"),
-                reason = "Use the project formatter abstraction.",
+                deny = listOf("^java\\.text\\..*$"),
+                message = "Use the project formatter abstraction.",
             ),
         ).lint(
             """
@@ -137,7 +137,7 @@ internal class ImportCustomsRuleTest {
         val findings = rule(
             restriction(
                 from = "^com\\.example\\.app$",
-                disallow = listOf("^java\\.text\\.NumberFormat$"),
+                deny = listOf("^java\\.text\\.NumberFormat$"),
             ),
         ).lint(
             """
@@ -158,7 +158,7 @@ internal class ImportCustomsRuleTest {
         val findings = rule(
             restriction(
                 from = "^com\\.example\\.app$",
-                disallow = listOf("^java\\.text\\.NumberFormat$"),
+                deny = listOf("^java\\.text\\.NumberFormat$"),
             ),
         ).lint(
             """
@@ -176,7 +176,7 @@ internal class ImportCustomsRuleTest {
         val findings = rule(
             restriction(
                 from = "^com\\.example\\.app$",
-                disallow = listOf("^java\\.text\\.NumberFormat$"),
+                deny = listOf("^java\\.text\\.NumberFormat$"),
             ),
         ).lint(
             """
@@ -196,7 +196,7 @@ internal class ImportCustomsRuleTest {
         val findings = rule(
             restriction(
                 from = "^com\\.example\\.app$",
-                disallow = listOf("^java\\.text\\..*$"),
+                deny = listOf("^java\\.text\\..*$"),
                 allow = listOf("^java\\.text\\.NumberFormat$"),
             ),
         ).lint(
@@ -215,7 +215,7 @@ internal class ImportCustomsRuleTest {
         val findings = rule(
             restriction(
                 from = "^com\\.example\\.app$",
-                disallow = listOf("^java\\.lang\\.Deprecated$"),
+                deny = listOf("^java\\.lang\\.Deprecated$"),
             ),
         ).lint(
             """
@@ -234,7 +234,7 @@ internal class ImportCustomsRuleTest {
         val findings = rule(
             restriction(
                 from = "^com\\.example\\.app$",
-                disallow = listOf("^com\\.example\\.app$"),
+                deny = listOf("^com\\.example\\.app$"),
             ),
         ).lint(
             """
@@ -252,13 +252,13 @@ internal class ImportCustomsRuleTest {
         val findings = rule(
             restriction(
                 from = "^com\\.example\\.app$",
-                disallow = listOf("^java\\.text\\..*$"),
-                reason = "First restriction.",
+                deny = listOf("^java\\.text\\..*$"),
+                message = "First restriction.",
             ),
             restriction(
                 from = "^com\\.example\\..*$",
-                disallow = listOf("^java\\.text\\.NumberFormat$"),
-                reason = "Second restriction.",
+                deny = listOf("^java\\.text\\.NumberFormat$"),
+                message = "Second restriction.",
             ),
         ).lint(
             """
@@ -278,11 +278,11 @@ internal class ImportCustomsRuleTest {
         val findings = rule(
             restriction(
                 from = "^com\\.example\\.app$",
-                disallow = listOf("^java\\.text.*$"),
+                deny = listOf("^java\\.text.*$"),
             ),
             restriction(
                 from = "^com\\.example\\..*$",
-                disallow = listOf("^java\\.text\\.NumberFormat$"),
+                deny = listOf("^java\\.text\\.NumberFormat$"),
             ),
         ).lint(
             """
@@ -315,13 +315,13 @@ internal class ImportCustomsRuleTest {
             rule(
                 mapOf(
                     "from" to "^com\\.example$",
-                    "disallow" to "^java\\.text$",
+                    "deny" to "^java\\.text$",
                 ),
             )
         }
 
         exception.cause?.message shouldBe
-            "restrictions[0].disallow must be a list of non-blank strings."
+            "restrictions[0].deny must be a list of non-blank strings."
     }
 
     @Test
@@ -330,7 +330,7 @@ internal class ImportCustomsRuleTest {
             rule(
                 restriction(
                     from = "[",
-                    disallow = listOf("^java\\.text$"),
+                    deny = listOf("^java\\.text$"),
                 ),
             )
         }
@@ -345,7 +345,7 @@ internal class ImportCustomsRuleTest {
             rule(
                 mapOf(
                     "from" to "^com\\.example$",
-                    "disallow" to listOf("^java\\.text$"),
+                    "deny" to listOf("^java\\.text$"),
                     "because" to "Use an abstraction.",
                 ),
             )
@@ -356,18 +356,18 @@ internal class ImportCustomsRuleTest {
     }
 
     @Test
-    fun `rejects an empty disallow list`() {
+    fun `rejects an empty deny list`() {
         val exception = shouldThrow<Config.InvalidConfigurationError> {
             rule(
                 restriction(
                     from = "^com\\.example$",
-                    disallow = emptyList(),
+                    deny = emptyList(),
                 ),
             )
         }
 
         exception.cause?.message shouldBe
-            "restrictions[0].disallow must contain at least one pattern."
+            "restrictions[0].deny must contain at least one pattern."
     }
 
     private fun rule(vararg restrictions: Map<String, Any>): ImportCustomsRule =
@@ -375,17 +375,17 @@ internal class ImportCustomsRuleTest {
 
     private fun restriction(
         from: String,
-        disallow: List<String>,
+        deny: List<String>,
         allow: List<String> = emptyList(),
-        reason: String? = null,
+        message: String? = null,
     ): Map<String, Any> = buildMap {
         put("from", from)
-        put("disallow", disallow)
+        put("deny", deny)
         if (allow.isNotEmpty()) {
             put("allow", allow)
         }
-        if (reason != null) {
-            put("reason", reason)
+        if (message != null) {
+            put("message", message)
         }
     }
 }
